@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   modelValue: [String, Number, Boolean],
-  options: { type: Array, default: () => [] }, // [{ value, label }]
+  options: { type: Array, default: () => [] },
   placeholder: { type: String, default: '请选择' },
   disabled: { type: Boolean, default: false },
 })
@@ -42,7 +42,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', onClickOutside) })
 
 <template>
   <div ref="rootEl" class="relative inline-block w-full">
-    <button type="button" class="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
+    <button type="button" class="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#739EFA]/40 disabled:opacity-60 disabled:cursor-not-allowed"
             :aria-expanded="open ? 'true' : 'false'" :disabled="disabled" @click="toggle" @keydown="onKeydown">
       <span class="truncate text-left flex-1">{{ selected?.label ?? placeholder }}</span>
       <svg class="shrink-0 text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -53,7 +53,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', onClickOutside) })
             class="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer select-none"
             :class="[ (opt.value === modelValue) ? 'bg-slate-100 text-slate-900' : 'text-slate-800 hover:bg-slate-50' ]"
             @mouseenter="activeIndex = i" @mouseleave="activeIndex = -1" @click="selectOption(opt)">
-          <svg v-if="opt.value === modelValue" class="text-indigo-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg v-if="opt.value === modelValue" class="text-[#739EFA]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           <span class="truncate">{{ opt.label }}</span>
         </li>
       </ul>
@@ -62,5 +62,5 @@ onBeforeUnmount(() => { document.removeEventListener('click', onClickOutside) })
 </template>
 
 <style scoped>
-/***** no-op; using Tailwind utilities *****/
+/***** using Tailwind utilities *****/
 </style>

@@ -251,23 +251,23 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
       <h1 class="text-xl font-semibold text-slate-900">按键绑定生成器</h1>
       <div class="flex gap-2">
         <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="builder.mouseButtonBinds = []">清空</button>
-        <button class="px-3 py-2 rounded-lg border border-indigo-200 text-indigo-800 bg-indigo-50 hover:bg-indigo-100" @click="addBind">新增绑定</button>
+        <button class="px-3 py-2 rounded-lg border border-[#739EFA]/40 text-[#739EFA] bg-[#739EFA]/10 hover:bg-[#739EFA]/15" @click="addBind">新增绑定</button>
       </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 items-start gap-4 xl:gap-6 2xl:gap-8 xl:[grid-template-columns:1.5fr_1fr] 2xl:[grid-template-columns:2fr_1fr]">
       <!-- Left: Binds -->
-      <section class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <section class="min-w-0 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
         <h2 class="text-sm font-medium text-slate-800 mb-2">按键绑定</h2>
         <div class="space-y-3">
           <div v-for="(b, idx) in builder.mouseButtonBinds" :key="idx" class="rounded-lg border border-slate-200 bg-slate-50">
             <!-- Header -->
             <div class="flex items-center gap-2 p-2">
-              <span class="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-800">绑定 #{{ idx + 1 }}</span>
+              <span class="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full border border-[#739EFA]/40 bg-[#739EFA]/10 text-[#739EFA]">绑定 #{{ idx + 1 }}</span>
               <div class="flex-1"></div>
-              <button class="hidden sm:inline-flex w-[88px] h-[28px] items-center justify-center text-xs rounded border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100" @click="builder.mouseButtonBinds.splice(idx,1)">删除绑定</button>
-              <button class="w-[88px] h-[28px] inline-flex items-center justify-center text-xs rounded border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 sm:hidden" @click="builder.mouseButtonBinds.splice(idx,1)">删除绑定</button>
-              <button class="w-[88px] h-[28px] inline-flex items-center justify-center text-xs rounded border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100" :aria-label="b.collapsed ? '展开' : '收起'" @click="toggleBind(idx)">
+              <button class="hidden sm:inline-flex w-[88px] h-[28px] items-center justify-center text-xs rounded border border-[#739EFA]/40 bg-[#739EFA]/10 text-[#739EFA] hover:bg-[#739EFA]/15" @click="builder.mouseButtonBinds.splice(idx,1)">删除绑定</button>
+              <button class="w-[88px] h-[28px] inline-flex items-center justify-center text-xs rounded border border-[#739EFA]/40 bg-[#739EFA]/10 text-[#739EFA] hover:bg-[#739EFA]/15 sm:hidden" @click="builder.mouseButtonBinds.splice(idx,1)">删除绑定</button>
+              <button class="w-[88px] h-[28px] inline-flex items-center justify-center text-xs rounded border border-[#739EFA]/40 bg-[#739EFA]/10 text-[#739EFA] hover:bg-[#739EFA]/15" :aria-label="b.collapsed ? '展开' : '收起'" @click="toggleBind(idx)">
                 <svg class="transition-transform" :class="b.collapsed ? 'rotate-0' : 'rotate-90'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
@@ -285,7 +285,7 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
                 </div>
                 <div>
                   <label class="block text-[12px] text-slate-600 mb-1 flex items-center gap-1">绑定按键 (arg)
-                    <span class="relative group inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border border-indigo-200 bg-indigo-50 text-indigo-800 text-[12px] leading-none cursor-help" tabindex="0" aria-label="说明">i
+                    <span class="relative group inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border border-[#739EFA]/40 bg-[#739EFA]/10 text-[#739EFA] text-[12px] leading-none cursor-help" tabindex="0" aria-label="说明">i
                       <span class="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-20 -translate-x-1/2 break-words rounded-md border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-700 shadow-xl opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-focus-visible:opacity-100 group-focus-visible:scale-100">日志中的 2 代表鼠标右键；在“函数体行”中 2 代表鼠标中键
                         <span class="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rotate-45 bg-white border-l border-t border-slate-200"></span>
                       </span>
@@ -305,17 +305,37 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <div class="flex items-center justify-between mb-1"><label class="block text-[12px] text-slate-600">修饰键</label><div class="flex items-center gap-2 text-[11px] text-slate-600"><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600"></span>ON</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 border border-slate-500"></span>ANY</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600"></span>NOT</span></div></div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-[12px] text-slate-600">修饰键</label>
+                    <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 text-[11px] text-slate-600">
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600"></span>ON</span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 border border-slate-500"></span>ANY</span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600"></span>NOT</span>
+                      </div>
+                      <button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-700 shadow-sm hover:to-slate-100 active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300 text-[12px]" @click="b.modifierModes = {}">清除</button>
+                    </div>
+                  </div>
                   <div class="flex flex-wrap gap-2">
-                    <button v-for="m in MODIFIER_KEYS" :key="m" type="button" class="flex items-start gap-2 px-2 py-1 rounded-lg border text-[12px] grow basis-1/2 xl:basis-1/3 min-w-[120px] max-w-full overflow-hidden" :class="modeClass(getMode(b.modifierModes, m))" @click="cycleMode(b.modifierModes, m)">
+                    <button v-for="m in MODIFIER_KEYS" :key="m" type="button" class="flex items-start gap-2 px-2 py-1 rounded-lg border text-[12px] grow-0 shrink-0 basis-1/2 xl:basis-1/3 min-w-[120px] max-w-full overflow-hidden" :class="modeClass(getMode(b.modifierModes, m))" @click="cycleMode(b.modifierModes, m)">
   <span class="flex-1 min-w-0 break-words text-left">{{ m }}</span>
 </button>
                   </div>
                 </div>
                 <div>
-                  <div class="flex items-center justify-between mb-1"><label class="block text-[12px] text-slate-600">锁定键</label><div class="flex items-center gap-2 text-[11px] text-slate-600"><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600"></span>ON</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 border border-slate-500"></span>ANY</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600"></span>NOT</span></div></div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-[12px] text-slate-600">锁定键</label>
+                    <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 text-[11px] text-slate-600">
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600"></span>ON</span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 border border-slate-500"></span>ANY</span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600"></span>NOT</span>
+                      </div>
+                      <button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-700 shadow-sm hover:to-slate-100 active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300 text-[12px]" @click="b.lockModes = {}">清除</button>
+                    </div>
+                  </div>
                   <div class="flex flex-wrap gap-2">
-                    <button v-for="k in LOCK_KEYS" :key="k" type="button" class="flex items-start gap-2 px-2 py-1 rounded-lg border text-[12px] grow basis-1/2 xl:basis-1/3 min-w-[120px] max-w-full overflow-hidden" :class="modeClass(getMode(b.lockModes, k))" @click="cycleMode(b.lockModes, k)">
+                    <button v-for="k in LOCK_KEYS" :key="k" type="button" class="flex items-start gap-2 px-2 py-1 rounded-lg border text-[12px] grow-0 shrink-0 basis-1/2 xl:basis-1/3 min-w-[120px] max-w-full overflow-hidden" :class="modeClass(getMode(b.lockModes, k))" @click="cycleMode(b.lockModes, k)">
   <span class="flex-1 min-w-0 break-words text-left">{{ k }}</span>
 </button>
                   </div>
@@ -420,21 +440,21 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
       </section>
 
       <!-- Right: JSON + Lua outputs -->
-      <section class="xl:sticky xl:top-6 h-fit bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <section class="min-w-0 xl:sticky xl:top-6 h-fit bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
         <h2 class="text-sm font-medium text-slate-800 mb-2">JSON · 生成 · 导出</h2>
         <label class="block text-[12px] text-slate-600 mb-1">配置 JSON</label>
         <textarea class="w-full min-h-[200px] md:min-h-[240px] max-h-[60vh] xl:max-h-[65vh] 2xl:max-h-[70vh] resize-y px-3 py-2 rounded-lg border border-slate-200 font-mono text-[12px]" v-model="jsonText" spellcheck="false"></textarea>
         <div class="flex flex-wrap gap-2 my-2">
-          <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="loadFromJson">从 JSON 载入</button>
-          <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="copyJson">复制 JSON</button>
-          <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="downloadJson">下载 .json</button>
-          <button class="px-3 py-2 rounded-lg border border-indigo-200 text-indigo-800 bg-indigo-50 hover:bg-indigo-100" @click="null">生成 Lua（离线）</button>
-          <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="copyLua">复制 Lua</button>
-          <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="downloadLua">下载 .lua</button>
+          <button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-sm hover:to-slate-100 hover:shadow active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300" @click="loadFromJson">从 JSON 载入</button>
+          <button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-sm hover:to-slate-100 hover:shadow active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300" @click="copyJson">复制 JSON</button>
+          <button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-sm hover:to-slate-100 hover:shadow active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300" @click="downloadJson">下载 .json</button>
+          <button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-sm hover:to-slate-100 hover:shadow active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300" @click="null">生成 Lua（离线）</button>
+          <button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-sm hover:to-slate-100 hover:shadow active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300" @click="copyLua">复制 Lua</button>
+          <button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-sm hover:to-slate-100 hover:shadow active:translate-y-[1px] active:shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-300" @click="downloadLua">下载 .lua</button>
         </div>
         <label class="block text-[12px] text-slate-600 mb-1">Lua 输出</label>
-        <div class="rounded-lg border border-slate-200 bg-slate-900 text-slate-100 overflow-auto max-h-[420px] md:max-h-[50vh] xl:max-h-[60vh] 2xl:max-h-[65vh]">
-          <pre class="p-3 text-[12px] whitespace-pre">{{ luaText }}</pre>
+        <div class="rounded-lg border border-slate-200 bg-slate-900 text-slate-100 w-full max-w-full overflow-x-auto overflow-y-auto min-w-0 max-h-[420px] md:max-h-[50vh] xl:max-h-[60vh] 2xl:max-h-[65vh]">
+          <pre class="p-3 text-[12px] whitespace-pre w-max min-w-full ">{{ luaText }}</pre>
         </div>
         <div class="text-[12px] text-slate-500 mt-2">注：本页面完全在浏览器中构建 Lua，无需后端接口。</div>
       </section>
@@ -454,6 +474,12 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
 .rotate-0 { transform: rotate(0deg); }
 .rotate-90 { transform: rotate(90deg); }
 </style>
+
+
+
+
+
+
 
 
 
