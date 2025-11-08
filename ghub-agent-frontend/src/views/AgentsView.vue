@@ -50,15 +50,11 @@ const KeyIndex = KeyOptions.map(k => ({
   label: `${k} (0x${(KeyCode[k] >>> 0).toString(16)})`,
   search: `${k.toLowerCase()} 0x${(KeyCode[k]>>>0).toString(16)} ${KeyCode[k]}`,
 }))
-function keySuggestions(q) {
-  const s = (q || '').trim().toLowerCase()
-  if (!s) return KeyIndex.slice(0, 20)
-  const tokens = s.split(/\s+/).filter(Boolean)
-  return KeyIndex.filter(it => tokens.every(t => it.search.includes(t))).slice(0, 20)
-}
 
 const ModifierLower = { LSHIFT:'lshift', RSHIFT:'rshift', LCTRL:'lctrl', RCTRL:'rctrl', LALT:'lalt', RALT:'ralt' }
 const LockLower = { CAPSLOCK:'capslock', NUMLOCK:'numlock', SCROLLLOCK:'scrolllock' }
+const MODIFIER_KEYS = ['LCTRL','RCTRL','LSHIFT','RSHIFT','LALT','RALT']
+const LOCK_KEYS = ['CAPSLOCK','NUMLOCK','SCROLLLOCK']
 
 // State
 const builder = reactive({ mouseButtonBinds: [] })
@@ -68,18 +64,38 @@ function addBind() {
     note: '',
     button: 1,
     mouseEvent: 'MOUSE_BUTTON_PRESSED',
-    modifiers: [],
-    locks: [],
     function: { functionName: 'MyFunc', lines: [] },
     collapsed: false,
+    modifierModes: {}, // {KEY: 'ON'|'ANY'|'NOT'} - missing implies ANY
+    lockModes: {},
   })
 }
 function removeBind(idx) { builder.mouseButtonBinds.splice(idx, 1) }
 function toggleBind(idx) { const b = builder.mouseButtonBinds[idx]; b.collapsed = !b.collapsed }
 
+// Tri-state helpers
+function getMode(map, key) { return (map && map[key]) || 'ANY' }
+function setMode(map, key, mode) { map[key] = mode }
+function cycleMode(map, key) { const v = getMode(map, key); setMode(map, key, v === 'ANY' ? 'ON' : v === 'ON' ? 'NOT' : 'ANY') }
+function modeClass(mode) {
+  return mode === 'ON' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+    : mode === 'NOT' ? 'border-rose-200 bg-rose-50 text-rose-800'
+    : 'border-slate-200 bg-slate-50 text-slate-700'
+}
+
 // JSON and Lua outputs
-function jsonClean(b) {
-  return { mouseButtonBinds: (b.mouseButtonBinds || []).map(x => { const y = JSON.parse(JSON.stringify(x)); delete y.collapsed; return y }) }
+function jsonClean(b){
+  return { mouseButtonBinds: (b.mouseButtonBinds||[]).map(x=>{
+    const y = JSON.parse(JSON.stringify(x))
+    delete y.collapsed
+    // ensure maps
+    y.modifierModes = y.modifierModes || {}
+    y.lockModes = y.lockModes || {}
+    // legacy arrays -> migrate
+    if (Array.isArray(y.modifiers)) { const m={}; MODIFIER_KEYS.forEach(k=>{ if (y.modifiers.includes(k)) m[k]='ON' }); y.modifierModes = m; delete y.modifiers }
+    if (Array.isArray(y.locks)) { const m={}; LOCK_KEYS.forEach(k=>{ if (y.locks.includes(k)) m[k]='ON' }); y.lockModes = m; delete y.locks }
+    return y
+  }) }
 }
 const jsonText = ref('')
 watch(builder, () => { jsonText.value = JSON.stringify(jsonClean(builder), null, 2) }, { deep: true, immediate: true })
@@ -125,15 +141,21 @@ function luaOfBind(b) {
   let has=false
   if (b.mouseEvent) { s += ` event == "${b.mouseEvent}"`; has=true }
   if (Number(b.button) > 0) { s += (has ? ' and' : '') + ` arg == ${Number(b.button)}`; has=true }
-  if (Array.isArray(b.modifiers) && b.modifiers.length > 0) {
-    const all = ['LCTRL','RCTRL','LSHIFT','RSHIFT','LALT','RALT']
-    for (const m of all) { const lower = ModifierLower[m]; s += b.modifiers.includes(m) ? ` and IsModifierPressed("${lower}")` : ` and not IsModifierPressed("${lower}")` }
-  }
-  if (Array.isArray(b.locks) && b.locks.length > 0) {
-    const all = ['CAPSLOCK','NUMLOCK','SCROLLLOCK']
-    for (const k of all) { const lower = LockLower[k]; s += b.locks.includes(k) ? ` and IsKeyLockOn("${lower}")` : ` and not IsKeyLockOn("${lower}")` }
-  }
-  s += ' then\n'
+  // modifiers tri-state
+  const mm = b.modifierModes || {}
+  MODIFIER_KEYS.forEach(k=>{
+    const mode = mm[k] || 'ANY'; if (mode === 'ANY') return
+    const lower = ModifierLower[k]
+    s += ` and ${mode === 'ON' ? '' : 'not '}IsModifierPressed("${lower}")`
+  })
+  // locks tri-state
+  const lm = b.lockModes || {}
+  LOCK_KEYS.forEach(k=>{
+    const mode = lm[k] || 'ANY'; if (mode === 'ANY') return
+    const lower = LockLower[k]
+    s += ` and ${mode === 'ON' ? '' : 'not '}IsKeyLockOn("${lower}")`
+  })
+  s += " then\n"
   if (b.function && (b.function.functionName || '').length > 0) s += `         ${b.function.functionName}()\n`
   s += '     end'
   return s
@@ -162,13 +184,6 @@ function updateLine(idx, lidx, field, value) {
   if (['mouseButtonNum','ms','x','y','wheelSteps'].includes(field)) ln[field] = Number(value)
   else ln[field] = value
 }
-function toggle(arr, val, on) {
-  const i = arr.indexOf(val)
-  if (on && i === -1) arr.push(val)
-  if (!on && i !== -1) arr.splice(i, 1)
-}
-function toggleModifier(idx, m, on) { toggle(builder.mouseButtonBinds[idx].modifiers, m, on) }
-function toggleLock(idx, k, on) { toggle(builder.mouseButtonBinds[idx].locks, k, on) }
 
 function addLine(idx, type) {
   const fn = builder.mouseButtonBinds[idx].function
@@ -187,14 +202,19 @@ function loadFromJson() {
   try {
     const obj = JSON.parse(jsonText.value || '{"mouseButtonBinds":[]}')
     const arr = Array.isArray(obj.mouseButtonBinds) ? obj.mouseButtonBinds : []
-    builder.mouseButtonBinds = arr.map(x => ({ ...x, collapsed: false }))
+    builder.mouseButtonBinds = arr.map(x => {
+      const y = { ...x }
+      y.collapsed = false
+      if (!y.modifierModes) { const m = {}; (y.modifiers||[]).forEach(k=> m[k]='ON'); y.modifierModes = m; delete y.modifiers }
+      if (!y.lockModes) { const m = {}; (y.locks||[]).forEach(k=> m[k]='ON'); y.lockModes = m; delete y.locks }
+      return y
+    })
   } catch (e) {
     alert('JSON 解析失败: ' + e.message)
   }
 }
 function copyToClipboard(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text)
-  // fallback
   const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
   return Promise.resolve()
 }
@@ -218,7 +238,7 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
 </script>
 
 <template>
-  <div class="max-w-[1100px] mx-auto space-y-4">
+  <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 max-w-[1200px] xl:max-w-[1600px] 2xl:max-w-[2000px] space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-semibold text-slate-900">按键绑定生成器</h1>
       <div class="flex gap-2">
@@ -227,7 +247,7 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+    <div class="grid grid-cols-1 md:grid-cols-2 items-start gap-4 xl:gap-6 2xl:gap-8 xl:[grid-template-columns:1.5fr_1fr] 2xl:[grid-template-columns:2fr_1fr]">
       <!-- Left: Binds -->
       <section class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
         <h2 class="text-sm font-medium text-slate-800 mb-2">按键绑定</h2>
@@ -245,51 +265,53 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
             </div>
             <!-- Summary when collapsed -->
             <div v-if="b.collapsed" class="px-3 pb-2 text-xs text-slate-500 truncate">
-              {{ [b.note?.trim(), b.button?`arg:${b.button}`:'', b.mouseEvent, b.function?.functionName, (b.function?.lines?.length||0)?`行:${b.function?.lines?.length}`:''].filter(Boolean).join(' · ') }}
+              {{ [b.note && b.note.trim(), b.button ? ('arg:' + b.button) : '', b.mouseEvent, b.function?.functionName, (b.function?.lines?.length||0) ? ('行:' + (b.function?.lines?.length||0)) : ''].filter(Boolean).join(' · ') }}
             </div>
 
             <!-- Body -->
             <div v-show="!b.collapsed" class="p-3 space-y-3 border-t border-slate-200 bg-white rounded-b-lg">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
-                  <label class="block text-[12px] text-slate-600 mb-1">备注</label>
+                  <label class="block text-[12px] text-slate-600 mb-1 flex items-center gap-1">备注</label>
                   <input type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="b.note||''" @input="e=>updateBind(idx,'note',e.target.value)" />
                 </div>
                 <div>
-                  <label class="block text-[12px] text-slate-600 mb-1">绑定按键 (arg)
-                    <span class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-800" title="日志中的 2 代表鼠标右键；鼠标函数体行中 2 代表鼠标中键">i</span>
+                  <label class="block text-[12px] text-slate-600 mb-1 flex items-center gap-1">绑定按键 (arg)
+                    <span class="relative group inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border border-indigo-200 bg-indigo-50 text-indigo-800 text-[12px] leading-none cursor-help" tabindex="0" aria-label="说明">i
+                      <span class="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-20 -translate-x-1/2 break-words rounded-md border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-700 shadow-xl opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-focus-visible:opacity-100 group-focus-visible:scale-100">日志中的 2 代表鼠标右键；在“函数体行”中 2 代表鼠标中键
+                        <span class="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rotate-45 bg-white border-l border-t border-slate-200"></span>
+                      </span>
+                    </span>
                   </label>
                   <input type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="Number(b.button)||1" @input="e=>updateBind(idx,'button',e.target.value)" />
                 </div>
                 <div>
-                  <label class="block text-[12px] text-slate-600 mb-1">事件 (event)</label>
+                  <label class="block text-[12px] text-slate-600 mb-1 flex items-center gap-1">事件 (event)</label>
                   <select class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="b.mouseEvent" @change="e=>updateBind(idx,'mouseEvent',e.target.value)">
                     <option v-for="o in MouseOnEvent" :key="o.value" :value="o.value">{{ o.label }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[12px] text-slate-600 mb-1">函数名</label>
+                  <label class="block text-[12px] text-slate-600 mb-1 flex items-center gap-1">函数名</label>
                   <input type="text" class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="b.function?.functionName||''" @input="e=>updateBind(idx,'functionName',e.target.value)" />
                 </div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-[12px] text-slate-600 mb-1">修饰键</label>
-                  <div class="text-[12px] text-slate-500 mb-1">勾选表示必须按下；未勾选表示必须未按下（当任意勾选时生效）</div>
-                  <div class="grid grid-cols-3 gap-2">
-                    <label class="flex items-center gap-2 text-[12px]" v-for="m in ['LCTRL','RCTRL','LSHIFT','RSHIFT','LALT','RALT']" :key="m">
-                      <input type="checkbox" :checked="b.modifiers?.includes(m)" @change="e=>toggleModifier(idx,m,e.target.checked)" /> {{ m }}
-                    </label>
+                  <div class="flex items-center justify-between mb-1"><label class="block text-[12px] text-slate-600">修饰键</label><div class="flex items-center gap-2 text-[11px] text-slate-600"><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600"></span>ON</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 border border-slate-500"></span>ANY</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600"></span>NOT</span></div></div>
+                  <div class="flex flex-wrap gap-2">
+                    <button v-for="m in MODIFIER_KEYS" :key="m" type="button" class="flex items-start gap-2 px-2 py-1 rounded-lg border text-[12px] grow basis-1/2 xl:basis-1/3 min-w-[120px] max-w-full overflow-hidden" :class="modeClass(getMode(b.modifierModes, m))" @click="cycleMode(b.modifierModes, m)">
+  <span class="flex-1 min-w-0 break-words text-left">{{ m }}</span>
+</button>
                   </div>
                 </div>
                 <div>
-                  <label class="block text-[12px] text-slate-600 mb-1">锁定键</label>
-                  <div class="text-[12px] text-slate-500 mb-1">勾选表示灯亮；未勾选表示灯灭（当任意勾选时生效）</div>
-                  <div class="grid grid-cols-3 gap-2">
-                    <label class="flex items-center gap-2 text-[12px]" v-for="k in ['CAPSLOCK','NUMLOCK','SCROLLLOCK']" :key="k">
-                      <input type="checkbox" :checked="b.locks?.includes(k)" @change="e=>toggleLock(idx,k,e.target.checked)" /> {{ k }}
-                    </label>
+                  <div class="flex items-center justify-between mb-1"><label class="block text-[12px] text-slate-600">锁定键</label><div class="flex items-center gap-2 text-[11px] text-slate-600"><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600"></span>ON</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 border border-slate-500"></span>ANY</span><span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600"></span>NOT</span></div></div>
+                  <div class="flex flex-wrap gap-2">
+                    <button v-for="k in LOCK_KEYS" :key="k" type="button" class="flex items-start gap-2 px-2 py-1 rounded-lg border text-[12px] grow basis-1/2 xl:basis-1/3 min-w-[120px] max-w-full overflow-hidden" :class="modeClass(getMode(b.lockModes, k))" @click="cycleMode(b.lockModes, k)">
+  <span class="flex-1 min-w-0 break-words text-left">{{ k }}</span>
+</button>
                   </div>
                 </div>
               </div>
@@ -402,20 +424,20 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
       </section>
 
       <!-- Right: JSON + Lua outputs -->
-      <section class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <section class="xl:sticky xl:top-6 h-fit bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
         <h2 class="text-sm font-medium text-slate-800 mb-2">JSON · 生成 · 导出</h2>
         <label class="block text-[12px] text-slate-600 mb-1">配置 JSON</label>
-        <textarea class="w-full min-h-[180px] max-h-[60vh] resize-y px-3 py-2 rounded-lg border border-slate-200 font-mono text-[12px]" v-model="jsonText" spellcheck="false"></textarea>
+        <textarea class="w-full min-h-[200px] md:min-h-[240px] max-h-[60vh] xl:max-h-[65vh] 2xl:max-h-[70vh] resize-y px-3 py-2 rounded-lg border border-slate-200 font-mono text-[12px]" v-model="jsonText" spellcheck="false"></textarea>
         <div class="flex flex-wrap gap-2 my-2">
           <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="loadFromJson">从 JSON 载入</button>
           <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="copyJson">复制 JSON</button>
           <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="downloadJson">下载 .json</button>
-          <button class="px-3 py-2 rounded-lg border border-indigo-200 text-indigo-800 bg-indigo-50 hover:bg-indigo-100" @click="/* no-op: luaText 是实时的 */ null">生成 Lua（离线）</button>
+          <button class="px-3 py-2 rounded-lg border border-indigo-200 text-indigo-800 bg-indigo-50 hover:bg-indigo-100" @click="null">生成 Lua（离线）</button>
           <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="copyLua">复制 Lua</button>
           <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="downloadLua">下载 .lua</button>
         </div>
         <label class="block text-[12px] text-slate-600 mb-1">Lua 输出</label>
-        <div class="rounded-lg border border-slate-200 bg-slate-900 text-slate-100 overflow-auto max-h-[420px]">
+        <div class="rounded-lg border border-slate-200 bg-slate-900 text-slate-100 overflow-auto max-h-[420px] md:max-h-[50vh] xl:max-h-[60vh] 2xl:max-h-[65vh]">
           <pre class="p-3 text-[12px] whitespace-pre">{{ luaText }}</pre>
         </div>
         <div class="text-[12px] text-slate-500 mt-2">注：本页面完全在浏览器中构建 Lua，无需后端接口。</div>
@@ -433,7 +455,14 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
 </template>
 
 <style scoped>
-/***** minor polish for rotate animation *****/
 .rotate-0 { transform: rotate(0deg); }
 .rotate-90 { transform: rotate(90deg); }
 </style>
+
+
+
+
+
+
+
+
