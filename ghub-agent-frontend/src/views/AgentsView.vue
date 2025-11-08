@@ -1,6 +1,6 @@
 ﻿<script setup>
 import { reactive, ref, computed, watch, onMounted } from 'vue'
-
+import MenuSelect from '@/components/MenuSelect.vue'
 // Enums and labels
 const MouseOnEvent = [
   { value: 'MOUSE_BUTTON_PRESSED', label: '鼠标按钮按下' },
@@ -55,6 +55,14 @@ const ModifierLower = { LSHIFT:'lshift', RSHIFT:'rshift', LCTRL:'lctrl', RCTRL:'
 const LockLower = { CAPSLOCK:'capslock', NUMLOCK:'numlock', SCROLLLOCK:'scrolllock' }
 const MODIFIER_KEYS = ['LCTRL','RCTRL','LSHIFT','RSHIFT','LALT','RALT']
 const LOCK_KEYS = ['CAPSLOCK','NUMLOCK','SCROLLLOCK']
+
+const LineTypeOptions = [
+  { value: 'Keyboard', label: '键盘' },
+  { value: 'Mouse', label: '鼠标' },
+  { value: 'Sleep', label: '延时' },
+  { value: 'Macro', label: '宏' },
+  { value: 'MouseMove', label: '鼠标移动' },
+]
 
 // State
 const builder = reactive({ mouseButtonBinds: [] })
@@ -287,9 +295,7 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
                 </div>
                 <div>
                   <label class="block text-[12px] text-slate-600 mb-1 flex items-center gap-1">事件 (event)</label>
-                  <select class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="b.mouseEvent" @change="e=>updateBind(idx,'mouseEvent',e.target.value)">
-                    <option v-for="o in MouseOnEvent" :key="o.value" :value="o.value">{{ o.label }}</option>
-                  </select>
+                  <MenuSelect :options="MouseOnEvent" :model-value="b.mouseEvent" @update:modelValue="v=>updateBind(idx,'mouseEvent',v)" />
                 </div>
                 <div>
                   <label class="block text-[12px] text-slate-600 mb-1 flex items-center gap-1">函数名</label>
@@ -324,9 +330,9 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
                     <div v-if="ln.type==='Keyboard'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                       <div>
                         <label class="block text-[12px] text-slate-600 mb-1">事件</label>
-                        <select class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="ln.keyboardEvent" @change="e=>updateLine(idx,lidx,'keyboardEvent',e.target.value)">
-                          <option v-for="o in KeyboardEvent" :key="o.value" :value="o.value">{{ o.label }}</option>
-                        </select>
+
+                        <MenuSelect :options="KeyboardEvent" :model-value="ln.keyboardEvent" @update:modelValue="v=>updateLine(idx,lidx,'keyboardEvent',v)" />
+
                       </div>
                       <div>
                         <label class="block text-[12px] text-slate-600 mb-1">按键</label>
@@ -342,9 +348,7 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
                     <div v-else-if="ln.type==='Mouse'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                       <div>
                         <label class="block text-[12px] text-slate-600 mb-1">事件</label>
-                        <select class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="ln.mouseEvent" @change="e=>updateLine(idx,lidx,'mouseEvent',e.target.value)">
-                          <option v-for="o in MouseButtonAction" :key="o.value" :value="o.value">{{ o.label }}</option>
-                        </select>
+                        <MenuSelect :options="MouseButtonAction" :model-value="ln.mouseEvent" @update:modelValue="v=>updateLine(idx,lidx,'mouseEvent',v)" />
                       </div>
                       <div>
                         <label class="block text-[12px] text-slate-600 mb-1">按钮编号</label>
@@ -368,9 +372,7 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
                     <div v-else-if="ln.type==='Macro'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                       <div>
                         <label class="block text-[12px] text-slate-600 mb-1">事件</label>
-                        <select class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="ln.macroEvent" @change="e=>updateLine(idx,lidx,'macroEvent',e.target.value)">
-                          <option v-for="o in MacroEvent" :key="o.value" :value="o.value">{{ o.label }}</option>
-                        </select>
+                        <MenuSelect :options="MacroEvent" :model-value="ln.macroEvent" @update:modelValue="v=>updateLine(idx,lidx,'macroEvent',v)" />
                       </div>
                       <div>
                         <label class="block text-[12px] text-slate-600 mb-1">名称</label>
@@ -384,9 +386,7 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
                     <div v-else-if="ln.type==='MouseMove'" class="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
                       <div class="sm:col-span-2">
                         <label class="block text-[12px] text-slate-600 mb-1">事件</label>
-                        <select class="w-full px-3 py-2 rounded-lg border border-slate-200" :value="ln.moveEvent" @change="e=>updateLine(idx,lidx,'moveEvent',e.target.value)">
-                          <option v-for="o in MouseMoveEvent" :key="o.value" :value="o.value">{{ o.label }}</option>
-                        </select>
+                        <MenuSelect :options="MouseMoveEvent" :model-value="ln.moveEvent" @update:modelValue="v=>updateLine(idx,lidx,'moveEvent',v)" />
                       </div>
                       <div v-if="ln.moveEvent!=='MOVE_WHEEL'">
                         <label class="block text-[12px] text-slate-600 mb-1">X</label>
@@ -408,14 +408,10 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
                 </div>
 
                 <div class="flex items-center gap-2 mt-2">
-                  <select class="px-3 py-2 rounded-lg border border-slate-200" :id="`lineType-${idx}`" v-model="b._newType">
-                    <option value="Keyboard">键盘</option>
-                    <option value="Mouse">鼠标</option>
-                    <option value="Sleep">延时</option>
-                    <option value="Macro">宏</option>
-                    <option value="MouseMove">鼠标移动</option>
-                  </select>
-                  <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="addLine(idx, b._newType || 'Keyboard')">添加行</button>
+<div class="basis-1/2 min-w-[160px]">
+                  <MenuSelect :options="LineTypeOptions" :model-value="b._newType || 'Keyboard'" @update:modelValue="v => b._newType = v" />
+</div>
+                  <button class="ml-auto px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50" @click="addLine(idx, b._newType || 'Keyboard')">添加行</button>
                 </div>
               </div>
             </div>
@@ -458,6 +454,8 @@ onMounted(() => { if (!builder.mouseButtonBinds.length) addBind() })
 .rotate-0 { transform: rotate(0deg); }
 .rotate-90 { transform: rotate(90deg); }
 </style>
+
+
 
 
 
