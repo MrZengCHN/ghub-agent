@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { RouterLink, RouterView } from "vue-router"
 </script>
 
@@ -10,9 +10,10 @@ import { RouterLink, RouterView } from "vue-router"
           <span class="logo-mark">GA</span>
           <span class="logo-title">GHUB Agent</span>
         </RouterLink>
-        <div class="nav-links">
+                <div class="nav-links">
           <RouterLink to="/" class="nav-link">Home</RouterLink>
           <RouterLink to="/agents" class="nav-link">Agents</RouterLink>
+          <RouterLink to="/ballistic" class="nav-link">弹道绘制</RouterLink>
           <RouterLink to="/about" class="nav-link">About</RouterLink>
         </div>
       </nav>

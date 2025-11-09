@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -21,6 +21,11 @@ const router = createRouter({
       path: '/agents',
       name: 'agents',
       component: () => import('../views/AgentsView.vue'),
+    },
+    {
+      path: '/ballistic',
+      name: 'ballistic',
+      component: () => import('../views/BallisticDrawView.vue'),
     },
   ],
 })
