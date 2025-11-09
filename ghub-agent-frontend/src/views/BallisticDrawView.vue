@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 
 // Base logical size (only for initial viewBox mapping)
@@ -80,6 +80,19 @@ function rootScale() {
   const svg = svgRef.value
   const rect = svg.getBoundingClientRect()
   return { sx: rect.width / VIEW_W, sy: rect.height / VIEW_H, rect }
+}
+// Fixed-size point radius in screen pixels (shrunk)
+const PT_RADIUS_PX = 3
+// Track root SVG scale to keep point size constant across zoom and canvas resize
+const rootSx = ref(1)
+const rootSy = ref(1)
+const ptR = computed(() => PT_RADIUS_PX / (zoom.value * (rootSx.value || 1)))
+function updateRootScaleRef() {
+  const svg = svgRef.value
+  if (!svg) return
+  const { sx, sy } = rootScale()
+  rootSx.value = sx || 1
+  rootSy.value = sy || 1
 }
 
 // Map client coords to WORLD coords (invert group transform: x_r = z*(x_w + panX))
@@ -339,6 +352,8 @@ function onKeyup(evt) {
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('keyup', onKeyup)
+  updateRootScaleRef()
+  window.addEventListener('resize', updateRootScaleRef)
   // restore panel visibility
   const v = localStorage.getItem('ballistic_showPanel')
   if (v != null) showPanel.value = v === '1'
@@ -347,6 +362,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('keyup', onKeyup)
+  window.removeEventListener('resize', updateRootScaleRef)
 })
 
 // Import/Export JSON
@@ -593,7 +609,7 @@ const bgTransform = computed(() => "translate(" + bgOffX.value + ", " + bgOffY.v
 
             <!-- points -->
             <g v-for="p in points" :key="p.id">
-              <circle class="pt" :class="{ sel: isSelected(p.id), flash_pt: flashId === p.id }" :cx="p.x" :cy="p.y" r="5" @mousedown.prevent="onPointDown(p, $event)" />
+              <circle class="pt" :class="{ sel: isSelected(p.id), flash_pt: flashId === p.id }" :cx="p.x" :cy="p.y" :r="ptR" @mousedown.prevent="onPointDown(p, $event)" />
               <text class="idx" :x="p.x + 10" :y="p.y - 10">{{ points.findIndex(x=>x.id===p.id) + 1 }}</text>
             </g>
 
@@ -791,3 +807,10 @@ const bgTransform = computed(() => "translate(" + bgOffX.value + ", " + bgOffY.v
   .layout { --panel-w: clamp(340px, 20vw, 460px); }
 }
 </style>
+
+
+/* Top bar: unify buttons to black */
+.page-header .btn,
+.page-header .btn.ghost { background:#000; border-color:#000; color:#fff; }
+.page-header .btn:hover,
+.page-header .btn.ghost:hover { background:#000; }
