@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 
 // Base logical size (only for initial viewBox mapping)
@@ -93,6 +93,7 @@ function clientToWorld(evt) {
 }
 
 function addPointAt(evt) {
+  if (evt.altKey) return
   if (justDragged.value) { justDragged.value = false; return }
   if (spaceHeld.value || panning.value || marquee.value) return // disable add while panning/selection
   const { x, y } = clientToWorld(evt)
@@ -138,6 +139,8 @@ function onSvgMouseDown(evt) {
     const { x, y } = clientToWorld(evt)
     bgPanning.value = true
     bgPanStart.value = { x, y, offX: bgOffX.value, offY: bgOffY.value }
+    justDragged.value = true
+    setTimeout(() => (justDragged.value = false), 0)
     return
   }
   // Space or middle-button triggers panning
